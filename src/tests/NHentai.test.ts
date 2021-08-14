@@ -1,11 +1,11 @@
 import cheerio from 'cheerio'
-import { nHentai } from "../NHentai/NHentai";
+import { NHentai } from "../NHentai/NHentai";
 import { APIWrapper, Source } from 'paperback-extensions-common';
 
 describe('nHentai Tests', function () {
 
     var wrapper: APIWrapper = new APIWrapper();
-    var source: Source = new nHentai(cheerio);
+    var source: Source = new NHentai(cheerio);
     var chai = require('chai'), expect = chai.expect, should = chai.should();
     var chaiAsPromised = require('chai-as-promised');
     chai.use(chaiAsPromised);
