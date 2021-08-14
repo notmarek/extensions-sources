@@ -36,7 +36,7 @@ export class nHentai extends Source {
       method,
     })
     const data = await this.requestManager.schedule(request, 1)
-    let json_data = JSON.parse(JSON.stringify(data.data))
+    let json_data = JSON.parse(data.data)
     return parseGallery(json_data)
   }
 
@@ -58,7 +58,7 @@ export class nHentai extends Source {
       method
     })
     const data = await this.requestManager.schedule(request, 1)
-    let json_data = JSON.parse(JSON.stringify(data.data))
+    let json_data = JSON.parse(data.data)
     return parseChapterDetails(json_data, mangaId);
 
   }
@@ -80,7 +80,7 @@ export class nHentai extends Source {
         method
       })
       const data = await this.requestManager.schedule(request, 1)
-      let json_data = JSON.parse(JSON.stringify(data.data))
+      let json_data = JSON.parse(data.data)
       return createPagedResults({
         results: parseSearch({ result: [json_data] }),
         metadata: {
@@ -93,7 +93,7 @@ export class nHentai extends Source {
         method
       })
       const data = await this.requestManager.schedule(request, 1)
-      let json_data = JSON.parse(JSON.stringify(data.data))
+      let json_data = JSON.parse(data.data)
       return createPagedResults({
         results: parseSearch(json_data),
         metadata: {
@@ -118,7 +118,7 @@ export class nHentai extends Source {
         method
       })
       const data = await this.requestManager.schedule(request, 1);
-      let json_data = JSON.parse(JSON.stringify(data.data))
+      let json_data = JSON.parse(data.data)
       section.items = parseSearch(json_data);
       sectionCallback(section);
     }
@@ -131,7 +131,7 @@ export class nHentai extends Source {
       method
     })
     const data = await this.requestManager.schedule(request, 1)
-    let json_data = JSON.parse(JSON.stringify(data.data))
+    let json_data = JSON.parse(data.data)
     page++;
     return createPagedResults({
       results: parseSearch(json_data),
