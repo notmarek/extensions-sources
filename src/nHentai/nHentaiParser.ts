@@ -69,10 +69,12 @@ export const parseGallery = (data: Gallery): Manga => {
         if (tag.type === "tag")
             tags.push(createTag({ id: tag.id.toString(), label: tag.name }));
     }
+    let artist = getArtist(data);
     return createManga({
         id: data.id.toString(),
         titles: [data.title.english, data.title.japanese, data.title.pretty],
-        artist: getArtist(data),
+        artist,
+        author: artist,
         image: `https://t.nhentai.net/galleries/${data.media_id}/cover.${typeOfImage(data.images.cover)}`,
         rating: 0,
         status: MangaStatus.COMPLETED,
