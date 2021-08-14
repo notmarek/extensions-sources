@@ -2,7 +2,8 @@ import {
     Manga,
     ChapterDetails,
     MangaStatus,
-    MangaTile
+    MangaTile,
+    Tag
 } from "paperback-extensions-common"
 
 export interface nHentaiImage {
@@ -63,6 +64,11 @@ const getArtist = (gallery: Gallery): string => {
 }
 
 export const parseGallery = (data: Gallery): Manga => {
+    let tags: Tag[] = [];
+    for (const tag of data.tags) {
+        if (tag.type === "tag")
+            tags.push(createTag({ id: tag.id.toString(), label: tag.name }));
+    }
     return createManga({
         id: data.id.toString(),
         titles: [data.title.english, data.title.japanese, data.title.pretty],
@@ -70,6 +76,8 @@ export const parseGallery = (data: Gallery): Manga => {
         image: `https://t.nhentai.net/galleries/${data.media_id}/cover.${typeOfImage(data.images.cover)}`,
         rating: 0,
         status: MangaStatus.COMPLETED,
+        follows: data.num_favorites,
+        tags: [createTagSection({ id: "tags", label: "Tags", tags: tags })],
         hentai: true,
     })
 }
