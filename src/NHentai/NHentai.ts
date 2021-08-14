@@ -8,9 +8,11 @@ import {
   PagedResults,
   SourceInfo,
   TagType,
-  LanguageCode
+  LanguageCode,
+  RequestHeaders,
+  RequestManager
 } from "paperback-extensions-common"
-import { parseChapterDetails, parseGallery, parseSearch } from "./NHentaiParser"
+import { parseChapterDetails, parseGallery, parseGalleryIntoChapter, parseSearch } from "./NHentaiParser"
 
 
 const NHENTAI_URL = "https://nhentai.net"
@@ -19,7 +21,7 @@ const method = 'GET'
 
 export const NHentaiInfo: SourceInfo = {
   version: "3.0.0",
-  name: "NHentai",
+  name: "nhentai",
   description: `Extension which pulls 18+ content from nHentai. (Literally all of it. We know why you're here)`,
   author: `NotMarek`,
   authorWebsite: `https://github.com/notmarek`,
@@ -30,6 +32,11 @@ export const NHentaiInfo: SourceInfo = {
 }
 
 export class NHentai extends Source {
+  readonly requestManager: RequestManager = createRequestManager({
+    requestsPerSecond: 3,
+    requestTimeout: 3000, 
+  });
+  
   async getMangaDetails(mangaId: string): Promise<Manga> {
     const request = createRequestObject({
       url: `${API}/gallery/${mangaId}`,
@@ -41,15 +48,13 @@ export class NHentai extends Source {
   }
 
   async getChapters(mangaId: string): Promise<Chapter[]> {
-    let chapters: Chapter[] = [
-      createChapter({
-        id: "",
-        mangaId: mangaId,
-        chapNum: 1,
-        langCode: LanguageCode.ENGLISH,
-      })
-    ]
-    return chapters;
+    const request = createRequestObject({
+      url: `${API}/gallery/${mangaId}`,
+      method,
+    })
+    const data = await this.requestManager.schedule(request, 1)
+    let json_data = (typeof data.data == 'string') ? JSON.parse(data.data) : data.data
+    return [parseGalleryIntoChapter(json_data, mangaId)];
   }
 
   async getChapterDetails(mangaId: string, chapterId: string): Promise<ChapterDetails> {
@@ -89,7 +94,7 @@ export class NHentai extends Source {
       })
     } else {
       const request = createRequestObject({
-        url: `${API}/galleries/search?query=${encodeURIComponent(title + " \"english\"")}&sort=popular&page=${page}`,
+        url: `${API}/galleries/search?query=${encodeURIComponent(title)}&sort=popular&page=${page}`,
         method
       })
       const data = await this.requestManager.schedule(request, 1)
@@ -114,9 +119,11 @@ export class NHentai extends Source {
     for (const section of sections) {
       sectionCallback(section);
       let request = createRequestObject({
-        url: `${API}/galleries/search?query=${encodeURIComponent("english")}&sort=${section.id}`,
+        url: `${API}/galleries/search?query=${encodeURIComponent("\"\"")}&sort=${section.id}`,
         method
       })
+      console.log(encodeURIComponent("\"\""));
+      console.log(`${API}/galleries/search?query=${encodeURIComponent("\"\"")}&sort=${section.id}`);
       const data = await this.requestManager.schedule(request, 1);
       let json_data = (typeof data.data == 'string') ? JSON.parse(data.data) : data.data
       section.items = parseSearch(json_data);
@@ -127,7 +134,7 @@ export class NHentai extends Source {
   async getViewMoreItems(homepageSectionId: string, metadata: any): Promise<PagedResults> {
     let page: number = metadata?.page ?? 1;
     const request = createRequestObject({
-      url: `${API}/galleries/search?query=${encodeURIComponent("english")}&sort=${homepageSectionId}&page=${page}`,
+      url: `${API}/galleries/search?query=${encodeURIComponent("\"\"")}&sort=${homepageSectionId}&page=${page}`,
       method
     })
     const data = await this.requestManager.schedule(request, 1)

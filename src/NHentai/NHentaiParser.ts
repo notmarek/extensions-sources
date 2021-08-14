@@ -3,7 +3,9 @@ import {
     ChapterDetails,
     MangaStatus,
     MangaTile,
-    Tag
+    Tag,
+    Chapter,
+    LanguageCode
 } from "paperback-extensions-common"
 
 export interface nHentaiImage {
@@ -63,6 +65,21 @@ const getArtist = (gallery: Gallery): string => {
     return "";
 }
 
+const getLanguage = (gallery: Gallery): string => {
+    let tags: nHentaiTag[] = gallery.tags;
+    for (const tag of tags) {
+        if (tag.type === "language" && tag.name !== "translated") {
+            return tag.name;
+        }
+    }
+    return "";
+}
+
+const languageToLanguageCode = (language: string): LanguageCode => {
+    let map: { [key: string]: LanguageCode } = { "japanese": LanguageCode.JAPANESE, "english": LanguageCode.ENGLISH, "chinese": LanguageCode.CHINEESE };
+    return map[language];
+}
+
 export const parseGallery = (data: Gallery): Manga => {
     let tags: Tag[] = [];
     for (const tag of data.tags) {
@@ -112,3 +129,13 @@ export const parseSearch = (data: nHentaiSearch): MangaTile[] => {
     return tiles;
 }
 
+export const parseGalleryIntoChapter = (data: Gallery, mangaId: string): Chapter => {
+    return createChapter({
+        id: "",
+        mangaId: mangaId,
+        chapNum: 1,
+        name: data.title.english,
+        langCode: languageToLanguageCode(getLanguage(data)),
+        time: new Date(data.upload_date * 1000),
+    })
+}
