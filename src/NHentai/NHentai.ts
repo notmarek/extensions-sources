@@ -10,16 +10,16 @@ import {
   TagType,
   LanguageCode
 } from "paperback-extensions-common"
-import { parseChapterDetails, parseGallery, parseSearch } from "./nHentaiParser"
+import { parseChapterDetails, parseGallery, parseSearch } from "./NHentaiParser"
 
 
 const NHENTAI_URL = "https://nhentai.net"
 const API = NHENTAI_URL + "/api"
 const method = 'GET'
 
-export const nHentaiInfo: SourceInfo = {
+export const NHentaiInfo: SourceInfo = {
   version: "3.0.0",
-  name: "nHentai",
+  name: "NHentai",
   description: `Extension which pulls 18+ content from nHentai. (Literally all of it. We know why you're here)`,
   author: `NotMarek`,
   authorWebsite: `https://github.com/notmarek`,
@@ -29,7 +29,7 @@ export const nHentaiInfo: SourceInfo = {
   websiteBaseURL: NHENTAI_URL,
 }
 
-export class nHentai extends Source {
+export class NHentai extends Source {
   async getMangaDetails(mangaId: string): Promise<Manga> {
     const request = createRequestObject({
       url: `${API}/gallery/${mangaId}`,

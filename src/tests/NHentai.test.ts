@@ -1,5 +1,5 @@
 import cheerio from 'cheerio'
-import { nHentai } from "../nHentai/nHentai";
+import { nHentai } from "../NHentai/NHentai";
 import { APIWrapper, Source } from 'paperback-extensions-common';
 
 describe('nHentai Tests', function () {
