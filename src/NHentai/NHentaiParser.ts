@@ -75,8 +75,11 @@ export const parseSearch = (data: QueryResponse): MangaTile[] => {
         tiles.push(createMangaTile({
             id: gallery.id.toString(),
             image: `https://t.nhentai.net/galleries/${gallery.media_id}/cover.${typeOfImage(gallery.images.cover)}`,
+            subtitleText: createIconText({
+                text: NHLanguages.getName(getLanguage(gallery))
+            }),
             title: createIconText({
-                text: gallery.title.english
+                text: gallery.title.pretty
             })
         }))
     }
