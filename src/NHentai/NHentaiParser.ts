@@ -5,59 +5,17 @@ import {
     MangaTile,
     Tag,
     Chapter,
-    LanguageCode
 } from "paperback-extensions-common"
 import { NHLanguages } from "./NHentaiHelper";
+import { Gallery, ImagePageObject, QueryResponse, TagObject } from "./NHentaiInterfaces";
 
-export interface nHentaiImage {
-    t: string; // type
-    w: number; // width
-    h: number; // height
-}
-
-const typeOfImage = (image: nHentaiImage): string => {
-    let map: { [key: string]: string } = { "j": "jpg", "p": "png" };
+const typeOfImage = (image: ImagePageObject): string => {
+    let map: { [key: string]: string } = { "j": "jpg", "p": "png", "g": "gif" };
     return map[image.t];
 }
 
-export interface nHentaiImages {
-    pages: nHentaiImage[];
-    cover: nHentaiImage;
-    thumbnail: nHentaiImage;
-}
-
-export interface nHentaiTag {
-    id: number;
-    type: string;
-    name: string;
-    url: string;
-    count: number;
-}
-
-export interface GalleryTitle {
-    english: string;
-    japanese: string;
-    pretty: string;
-}
-
-export interface Gallery {
-    id: number;
-    media_id: string;
-    title: GalleryTitle;
-    images: nHentaiImages;
-    scanlator: string;
-    upload_date: number;
-    tags: nHentaiTag[];
-    num_pages: number;
-    num_favorites: number;
-}
-
-export interface nHentaiSearch {
-    result: Gallery[];
-}
-
 const getArtist = (gallery: Gallery): string => {
-    let tags: nHentaiTag[] = gallery.tags;
+    let tags: TagObject[] = gallery.tags;
     for (const tag of tags) {
         if (tag.type === "artist") {
             return tag.name;
@@ -67,7 +25,7 @@ const getArtist = (gallery: Gallery): string => {
 }
 
 const getLanguage = (gallery: Gallery): string => {
-    let tags: nHentaiTag[] = gallery.tags;
+    let tags: TagObject[] = gallery.tags;
     for (const tag of tags) {
         if (tag.type === "language" && tag.name !== "translated") {
             return tag.name;
@@ -111,7 +69,7 @@ export const parseChapterDetails = (data: Gallery, mangaId: string): ChapterDeta
     })
 }
 
-export const parseSearch = (data: nHentaiSearch): MangaTile[] => {
+export const parseSearch = (data: QueryResponse): MangaTile[] => {
     const tiles: MangaTile[] = [];
     for (let gallery of data.result) {
         tiles.push(createMangaTile({
