@@ -92,6 +92,8 @@ export const resetSettings = (stateManager: SourceStateManager): Button => {
         onTap: () => {
             return Promise.all([
                 stateManager.store('languages', null),
+                stateManager.store('sort_order', null),
+                stateManager.store('extra_args', null),
             ]).then()
         }
     })
