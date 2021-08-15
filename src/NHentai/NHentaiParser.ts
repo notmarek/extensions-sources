@@ -9,9 +9,10 @@ import {
 import { NHLanguages } from "./NHentaiHelper";
 import { Gallery, ImagePageObject, QueryResponse, TagObject } from "./NHentaiInterfaces";
 
+const typeMap: { [key: string]: string } = { "j": "jpg", "p": "png", "g": "gif" };
+
 const typeOfImage = (image: ImagePageObject): string => {
-    let map: { [key: string]: string } = { "j": "jpg", "p": "png", "g": "gif" };
-    return map[image.t] ?? "";
+    return typeMap[image.t] ?? "";
 }
 
 const getArtist = (gallery: Gallery): string => {
