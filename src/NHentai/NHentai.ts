@@ -8,16 +8,14 @@ import {
   PagedResults,
   SourceInfo,
   TagType,
-  LanguageCode,
-  RequestHeaders,
   RequestManager,
   ContentRating,
   Section,
   SourceStateManager
 } from "paperback-extensions-common"
-import { NHLanguages, NHSortOrders } from "./NHentaiHelper"
+import { NHSortOrders } from "./NHentaiHelper"
 import { parseChapterDetails, parseGallery, parseGalleryIntoChapter, parseSearch } from "./NHentaiParser"
-import { getExtraArgs, getLanguages, resetSettings, settings } from "./NHentaiSettings"
+import { getExtraArgs, resetSettings, settings } from "./NHentaiSettings"
 
 
 const NHENTAI_URL = "https://nhentai.net"
@@ -47,9 +45,9 @@ const language = async (stateManager: SourceStateManager): Promise<string> => {
 }
 
 const sortOrder = async (query: string, stateManager: SourceStateManager): Promise<string[]> => {
-  let inQuery = NHSortOrders.containsShortcut(query);
-  if (inQuery[0].length !== 0) {
-    return [inQuery[0], query.replace(inQuery[1], "")];
+  let inQuery: string[] = NHSortOrders.containsShortcut(query);
+  if (inQuery[0]?.length !== 0) {
+    return [inQuery[0] ?? "", query.replace(inQuery[1] ?? "", "")];
   } else {
     let sortOrder = (await stateManager.retrieve('sort_order') as string) ?? NHSortOrders.getDefault();
     return [sortOrder, query];    
@@ -100,7 +98,7 @@ export class NHentai extends Source {
     return [parseGalleryIntoChapter(json_data, mangaId)];
   }
 
-  async getChapterDetails(mangaId: string, chapterId: string): Promise<ChapterDetails> {
+  async getChapterDetails(mangaId: string): Promise<ChapterDetails> {
     const request = createRequestObject({
       url: `${API}/gallery/${mangaId}`,
       method
@@ -122,15 +120,16 @@ export class NHentai extends Source {
       const data = await this.requestManager.schedule(request, 1)
       let json_data = (typeof data.data == 'string') ? JSON.parse(data.data) : data.data
       return createPagedResults({
-        results: parseSearch({ result: [json_data] }),
+        results: parseSearch({ result: [json_data],  num_pages: 1, per_page: 1}),
         metadata: {
           page: page + 1
         }
       })
     } else {
-      const [sort, query] = await sortOrder(title + " " + await language(this.stateManager) + await extraArgs(this.stateManager), this.stateManager);
+      const q: string = title + " " + await language(this.stateManager) + await extraArgs(this.stateManager);
+      const [sort, query]: string[] = await sortOrder(q, this.stateManager) ?? ["", q];
       const request = createRequestObject({
-        url: `${API}/galleries/search?query=${encodeURIComponent(query)}&sort=${sort}&page=${page}`,
+        url: `${API}/galleries/search?query=${encodeURIComponent(query ?? "")}&sort=${sort}&page=${page}`,
         method
       })
       const data = await this.requestManager.schedule(request, 1)
@@ -145,7 +144,7 @@ export class NHentai extends Source {
 
   }
 
-  async getHomePageSections(sectionCallback: (section: HomeSection) => void): Promise<void> {
+  override async getHomePageSections(sectionCallback: (section: HomeSection) => void): Promise<void> {
     const section1 = createHomeSection({ id: 'date', title: 'Recent', view_more: true });
     const section2 = createHomeSection({ id: 'popular-today', title: 'Popular Today', view_more: true });
     const section3 = createHomeSection({ id: 'popular-week', title: 'Popular Week', view_more: true });
@@ -165,9 +164,8 @@ export class NHentai extends Source {
     }
   }
 
-  async getViewMoreItems(homepageSectionId: string, metadata: any): Promise<PagedResults> {
+  override async getViewMoreItems(homepageSectionId: string, metadata: any): Promise<PagedResults> {
     let page: number = metadata?.page ?? 1;
-    let lang = await language(this.stateManager);
     const request = createRequestObject({
       url: `${API}/galleries/search?query=${encodeURIComponent(await language(this.stateManager) + await extraArgs(this.stateManager))}&sort=${homepageSectionId}&page=${page}`,
       method

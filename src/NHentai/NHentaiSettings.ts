@@ -2,7 +2,6 @@
 import {
     Button,
     NavigationButton,
-    Section,
     SourceStateManager,
 } from 'paperback-extensions-common'
 import {

@@ -11,7 +11,7 @@ import { Gallery, ImagePageObject, QueryResponse, TagObject } from "./NHentaiInt
 
 const typeOfImage = (image: ImagePageObject): string => {
     let map: { [key: string]: string } = { "j": "jpg", "p": "png", "g": "gif" };
-    return map[image.t];
+    return map[image.t] ?? "";
 }
 
 const getArtist = (gallery: Gallery): string => {
@@ -88,7 +88,7 @@ export const parseSearch = (data: QueryResponse): MangaTile[] => {
 
 export const parseGalleryIntoChapter = (data: Gallery, mangaId: string): Chapter => {
     return createChapter({
-        id: "",
+        id: mangaId,
         mangaId: mangaId,
         chapNum: 1,
         name: data.title.english,
