@@ -7,6 +7,7 @@ import {
     Chapter,
     LanguageCode
 } from "paperback-extensions-common"
+import { NHLanguages } from "./NHentaiHelper";
 
 export interface nHentaiImage {
     t: string; // type
@@ -75,11 +76,6 @@ const getLanguage = (gallery: Gallery): string => {
     return "";
 }
 
-const languageToLanguageCode = (language: string): LanguageCode => {
-    let map: { [key: string]: LanguageCode } = { "japanese": LanguageCode.JAPANESE, "english": LanguageCode.ENGLISH, "chinese": LanguageCode.CHINEESE };
-    return map[language];
-}
-
 export const parseGallery = (data: Gallery): Manga => {
     let tags: Tag[] = [];
     for (const tag of data.tags) {
@@ -135,7 +131,7 @@ export const parseGalleryIntoChapter = (data: Gallery, mangaId: string): Chapter
         mangaId: mangaId,
         chapNum: 1,
         name: data.title.english,
-        langCode: languageToLanguageCode(getLanguage(data)),
+        langCode: NHLanguages.getPBCode(getLanguage(data)),
         time: new Date(data.upload_date * 1000),
     })
 }

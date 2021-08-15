@@ -10,9 +10,14 @@ import {
   TagType,
   LanguageCode,
   RequestHeaders,
-  RequestManager
+  RequestManager,
+  ContentRating,
+  Section,
+  SourceStateManager
 } from "paperback-extensions-common"
+import { NHLanguages } from "./NHentaiHelper"
 import { parseChapterDetails, parseGallery, parseGalleryIntoChapter, parseSearch } from "./NHentaiParser"
+import { getLanguages, resetSettings, settings, settings } from "./NHentaiSettings"
 
 
 const NHENTAI_URL = "https://nhentai.net"
@@ -26,17 +31,40 @@ export const NHentaiInfo: SourceInfo = {
   author: `NotMarek`,
   authorWebsite: `https://github.com/notmarek`,
   icon: `icon.png`,
-  hentaiSource: true,
+  contentRating: ContentRating.ADULT,
   sourceTags: [{ text: "18+", type: TagType.YELLOW }],
   websiteBaseURL: NHENTAI_URL,
+}
+
+const language = async (stateManager: SourceStateManager): Promise<string> => {
+   let lang = (await stateManager.retrieve('languages') as string) ?? "";
+   if (lang.length === 0) {
+     return "\"\""
+   }
+   else {
+     return `language:"${lang}"`
+   }
 }
 
 export class NHentai extends Source {
   readonly requestManager: RequestManager = createRequestManager({
     requestsPerSecond: 3,
-    requestTimeout: 3000, 
+    requestTimeout: 3000,
   });
-  
+
+  stateManager = createSourceStateManager({})
+
+
+  override async getSourceMenu(): Promise<Section> {
+    return Promise.resolve(createSection({
+        id: 'main',
+        header: 'Source Settings',
+        rows: () => Promise.resolve([
+            settings(this.stateManager),
+            resetSettings(this.stateManager),
+        ])
+    }))
+}
   async getMangaDetails(mangaId: string): Promise<Manga> {
     const request = createRequestObject({
       url: `${API}/gallery/${mangaId}`,
@@ -69,14 +97,6 @@ export class NHentai extends Source {
   }
 
   async searchRequest(query: SearchRequest, metadata: any): Promise<PagedResults> {
-    if (query.hStatus === false) {
-      return createPagedResults({
-        results: [],
-        metadata: {
-          page: 1
-        }
-      })
-    }
     let page: number = metadata?.page ?? 1;
     let title: string = query.title ?? "";
     if (/^\d+$/.test(title) && title.length <= 6) {
@@ -94,7 +114,7 @@ export class NHentai extends Source {
       })
     } else {
       const request = createRequestObject({
-        url: `${API}/galleries/search?query=${encodeURIComponent(title)}&sort=popular&page=${page}`,
+        url: `${API}/galleries/search?query=${encodeURIComponent(title + " " + await language(this.stateManager))}&sort=popular&page=${page}`,
         method
       })
       const data = await this.requestManager.schedule(request, 1)
@@ -119,11 +139,9 @@ export class NHentai extends Source {
     for (const section of sections) {
       sectionCallback(section);
       let request = createRequestObject({
-        url: `${API}/galleries/search?query=${encodeURIComponent("\"\"")}&sort=${section.id}`,
+        url: `${API}/galleries/search?query=${encodeURIComponent(await language(this.stateManager))}&sort=${section.id}`,
         method
       })
-      console.log(encodeURIComponent("\"\""));
-      console.log(`${API}/galleries/search?query=${encodeURIComponent("\"\"")}&sort=${section.id}`);
       const data = await this.requestManager.schedule(request, 1);
       let json_data = (typeof data.data == 'string') ? JSON.parse(data.data) : data.data
       section.items = parseSearch(json_data);
@@ -133,8 +151,10 @@ export class NHentai extends Source {
 
   async getViewMoreItems(homepageSectionId: string, metadata: any): Promise<PagedResults> {
     let page: number = metadata?.page ?? 1;
+    let lang = await language(this.stateManager);
+    console.log(lang);
     const request = createRequestObject({
-      url: `${API}/galleries/search?query=${encodeURIComponent("\"\"")}&sort=${homepageSectionId}&page=${page}`,
+      url: `${API}/galleries/search?query=${encodeURIComponent(await language(this.stateManager))}&sort=${homepageSectionId}&page=${page}`,
       method
     })
     const data = await this.requestManager.schedule(request, 1)
