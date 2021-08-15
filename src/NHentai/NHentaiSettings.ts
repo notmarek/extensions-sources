@@ -13,6 +13,10 @@ export const getLanguages = async (stateManager: SourceStateManager): Promise<st
     return (await stateManager.retrieve('languages') as string[]) ?? NHLanguages.getDefault()
 }
 
+export const getExtraArgs = async (stateManager: SourceStateManager): Promise<string> => {
+    return (await stateManager.retrieve('extra_args') as string) ?? ""
+}
+
 export const settings = (stateManager: SourceStateManager): NavigationButton => {
     return createNavigationButton({
         id: 'settings',
@@ -22,6 +26,7 @@ export const settings = (stateManager: SourceStateManager): NavigationButton => 
             onSubmit: (values: any) => {
                 return Promise.all([
                     stateManager.store('languages', values.languages),
+                    stateManager.store('extra_args', values.extra_args),
                 ]).then()
             },
             validate: () => {
@@ -31,10 +36,11 @@ export const settings = (stateManager: SourceStateManager): NavigationButton => 
                 return Promise.resolve([
                     createSection({
                         id: 'content',
-                        footer: 'When enabled, same chapters from different scanlation group will not be shown.',
+                        footer: 'Modify the nhentai experience to your liking.',
                         rows: () => {
                             return Promise.all([
                                 getLanguages(stateManager),
+                                getExtraArgs(stateManager),
                             ]).then(async values => {
                                 return [
                                     createSelect({
@@ -46,6 +52,13 @@ export const settings = (stateManager: SourceStateManager): NavigationButton => 
                                         allowsMultiselect: false,
                                         minimumOptionCount: 1,
                                     }),
+                                    createInputField({
+                                        id: 'extra_args',
+                                        label: 'Additional arguments',
+                                        placeholder: "woman -lolicon -shotacon -yaoi",
+                                        maskInput: false,
+                                        value: values[1],
+                                    })
                                 ]
                             })
                         }

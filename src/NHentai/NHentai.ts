@@ -17,7 +17,7 @@ import {
 } from "paperback-extensions-common"
 import { NHLanguages } from "./NHentaiHelper"
 import { parseChapterDetails, parseGallery, parseGalleryIntoChapter, parseSearch } from "./NHentaiParser"
-import { getLanguages, resetSettings, settings, settings } from "./NHentaiSettings"
+import { getExtraArgs, getLanguages, resetSettings, settings } from "./NHentaiSettings"
 
 
 const NHENTAI_URL = "https://nhentai.net"
@@ -42,8 +42,13 @@ const language = async (stateManager: SourceStateManager): Promise<string> => {
      return "\"\""
    }
    else {
-     return `language:"${lang}"`
+     return `language:${lang}`
    }
+}
+
+const extraArgs = async (stateManager: SourceStateManager): Promise<string> => {
+  let args = await getExtraArgs(stateManager);
+  return ` ${args}` 
 }
 
 export class NHentai extends Source {
@@ -114,7 +119,7 @@ export class NHentai extends Source {
       })
     } else {
       const request = createRequestObject({
-        url: `${API}/galleries/search?query=${encodeURIComponent(title + " " + await language(this.stateManager))}&sort=popular&page=${page}`,
+        url: `${API}/galleries/search?query=${encodeURIComponent(title + " " + await language(this.stateManager) + await extraArgs(this.stateManager))}&sort=popular&page=${page}`,
         method
       })
       const data = await this.requestManager.schedule(request, 1)
@@ -139,7 +144,7 @@ export class NHentai extends Source {
     for (const section of sections) {
       sectionCallback(section);
       let request = createRequestObject({
-        url: `${API}/galleries/search?query=${encodeURIComponent(await language(this.stateManager))}&sort=${section.id}`,
+        url: `${API}/galleries/search?query=${encodeURIComponent(await language(this.stateManager) + await extraArgs(this.stateManager))}&sort=${section.id}`,
         method
       })
       const data = await this.requestManager.schedule(request, 1);
@@ -154,7 +159,7 @@ export class NHentai extends Source {
     let lang = await language(this.stateManager);
     console.log(lang);
     const request = createRequestObject({
-      url: `${API}/galleries/search?query=${encodeURIComponent(await language(this.stateManager))}&sort=${homepageSectionId}&page=${page}`,
+      url: `${API}/galleries/search?query=${encodeURIComponent(await language(this.stateManager) + await extraArgs(this.stateManager))}&sort=${homepageSectionId}&page=${page}`,
       method
     })
     const data = await this.requestManager.schedule(request, 1)
