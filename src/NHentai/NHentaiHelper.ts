@@ -61,3 +61,72 @@ class NHLanguagesClass {
 }
 
 export const NHLanguages = new NHLanguagesClass()
+
+interface SortOrder {
+    name: string,
+    NHCode: string,
+    shortcuts: string[],
+    default?: boolean
+}
+
+class NHSortOrderClass {
+    SortOrders: SortOrder[] = [
+        {
+            // Sort by popular
+            name: "Popular all-time",
+            NHCode: "popular",
+            shortcuts: ["s:p", "s:popular", "sort:p", "sort:popular"],
+            default: true
+        },
+        {
+            // Sort by popular this week
+            name: 'Popular this week',
+            NHCode: 'popular-week',
+            shortcuts: ["s:pw", "s:w", "s:popular-week", "sort:pw", "sort:w", "sort:popular-week"],
+        },
+        {
+            // Sort by popular today
+            name: 'Popular today',
+            NHCode: 'popular-today',
+            shortcuts: ["s:pt", "s:t", "s:popular-today", "sort:pt", "sort:t", "sort:popular-today"],
+        },
+        {
+            // Sort by recent
+            name: 'Recent',
+            NHCode: 'date',
+            shortcuts: ["s:r", "s:recent", "sort:r", "sort:recent"],
+        },
+
+
+    ]
+
+    constructor() {
+        // Sorts the sort orders based on name
+        this.SortOrders = this.SortOrders.sort((a, b) => a.name > b.name ? 1 : -1)
+    }
+
+    containsShortcut(query: string): string[] {
+        for (const SortOrder of this.SortOrders) {
+            for (const shortcut of SortOrder.shortcuts) {
+                if (query.includes(shortcut)) {
+                    return [SortOrder.NHCode, shortcut];
+                }
+            }
+        }
+        return ["", ""];
+    }
+
+    getNHCodeList(): string[] {
+        return this.SortOrders.map(SortOrder => SortOrder.NHCode)
+    }
+
+    getName(NHCode: string): string {
+        return this.SortOrders.filter(SortOrder => SortOrder.NHCode == NHCode)[0]?.name ?? 'Unknown'
+    }
+
+    getDefault(): string[] {
+        return this.SortOrders.filter(SortOrder => SortOrder.default).map(SortOrder => SortOrder.NHCode)
+    }
+}
+
+export const NHSortOrders = new NHSortOrderClass()

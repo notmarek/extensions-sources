@@ -15,7 +15,7 @@ import {
   Section,
   SourceStateManager
 } from "paperback-extensions-common"
-import { NHLanguages } from "./NHentaiHelper"
+import { NHLanguages, NHSortOrders } from "./NHentaiHelper"
 import { parseChapterDetails, parseGallery, parseGalleryIntoChapter, parseSearch } from "./NHentaiParser"
 import { getExtraArgs, getLanguages, resetSettings, settings } from "./NHentaiSettings"
 
@@ -44,6 +44,16 @@ const language = async (stateManager: SourceStateManager): Promise<string> => {
    else {
      return `language:${lang}`
    }
+}
+
+const sortOrder = async (query: string, stateManager: SourceStateManager): Promise<string[]> => {
+  let inQuery = NHSortOrders.containsShortcut(query);
+  if (inQuery[0].length !== 0) {
+    return [inQuery[0], query.replace(inQuery[1], "")];
+  } else {
+    let sortOrder = (await stateManager.retrieve('sort_order') as string) ?? NHSortOrders.getDefault();
+    return [sortOrder, query];    
+  }
 }
 
 const extraArgs = async (stateManager: SourceStateManager): Promise<string> => {
@@ -118,8 +128,9 @@ export class NHentai extends Source {
         }
       })
     } else {
+      const [sort, query] = await sortOrder(title + " " + await language(this.stateManager) + await extraArgs(this.stateManager), this.stateManager);
       const request = createRequestObject({
-        url: `${API}/galleries/search?query=${encodeURIComponent(title + " " + await language(this.stateManager) + await extraArgs(this.stateManager))}&sort=popular&page=${page}`,
+        url: `${API}/galleries/search?query=${encodeURIComponent(query)}&sort=${sort}&page=${page}`,
         method
       })
       const data = await this.requestManager.schedule(request, 1)
@@ -157,7 +168,6 @@ export class NHentai extends Source {
   async getViewMoreItems(homepageSectionId: string, metadata: any): Promise<PagedResults> {
     let page: number = metadata?.page ?? 1;
     let lang = await language(this.stateManager);
-    console.log(lang);
     const request = createRequestObject({
       url: `${API}/galleries/search?query=${encodeURIComponent(await language(this.stateManager) + await extraArgs(this.stateManager))}&sort=${homepageSectionId}&page=${page}`,
       method

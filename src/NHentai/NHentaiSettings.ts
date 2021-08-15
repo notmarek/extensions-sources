@@ -6,7 +6,7 @@ import {
     SourceStateManager,
 } from 'paperback-extensions-common'
 import {
-    NHLanguages,
+    NHLanguages, NHSortOrders,
 } from './NHentaiHelper'
 
 export const getLanguages = async (stateManager: SourceStateManager): Promise<string[]> => {
@@ -15,6 +15,10 @@ export const getLanguages = async (stateManager: SourceStateManager): Promise<st
 
 export const getExtraArgs = async (stateManager: SourceStateManager): Promise<string> => {
     return (await stateManager.retrieve('extra_args') as string) ?? ""
+}
+
+export const getSortOrders = async (stateManager: SourceStateManager): Promise<string[]> => {
+    return (await stateManager.retrieve('sort_order') as string[]) ?? NHSortOrders.getDefault()
 }
 
 export const settings = (stateManager: SourceStateManager): NavigationButton => {
@@ -26,6 +30,7 @@ export const settings = (stateManager: SourceStateManager): NavigationButton => 
             onSubmit: (values: any) => {
                 return Promise.all([
                     stateManager.store('languages', values.languages),
+                    stateManager.store('sort_order', values.sort_order),
                     stateManager.store('extra_args', values.extra_args),
                 ]).then()
             },
@@ -40,6 +45,7 @@ export const settings = (stateManager: SourceStateManager): NavigationButton => 
                         rows: () => {
                             return Promise.all([
                                 getLanguages(stateManager),
+                                getSortOrders(stateManager),
                                 getExtraArgs(stateManager),
                             ]).then(async values => {
                                 return [
@@ -52,12 +58,21 @@ export const settings = (stateManager: SourceStateManager): NavigationButton => 
                                         allowsMultiselect: false,
                                         minimumOptionCount: 1,
                                     }),
+                                    createSelect({
+                                        id: 'sort_order',
+                                        label: 'Default search sort',
+                                        options: NHSortOrders.getNHCodeList(),
+                                        displayLabel: option => NHSortOrders.getName(option),
+                                        value: values[1],
+                                        allowsMultiselect: false,
+                                        minimumOptionCount: 1,
+                                    }),
                                     createInputField({
                                         id: 'extra_args',
                                         label: 'Additional arguments',
                                         placeholder: "woman -lolicon -shotacon -yaoi",
                                         maskInput: false,
-                                        value: values[1],
+                                        value: values[2],
                                     })
                                 ]
                             })
