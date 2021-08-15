@@ -56,15 +56,13 @@ export const parseGallery = (data: Gallery): Manga => {
 }
 
 export const parseChapterDetails = (data: Gallery, mangaId: string): ChapterDetails => {
-    let counter: number = 0;
     return createChapterDetails({
         id: mangaId,
         mangaId: mangaId,
         longStrip: false,
-        pages: data.images.pages.map(image => {
+        pages: data.images.pages.map((image, i) => {
             let type = typeOfImage(image);
-            counter++;
-            return `https://i.nhentai.net/galleries/${data.media_id}/${counter}.${type}`;
+            return `https://i.nhentai.net/galleries/${data.media_id}/${i+1}.${type}`;
         }),
     })
 }
