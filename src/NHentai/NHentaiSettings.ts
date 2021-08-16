@@ -44,8 +44,7 @@ export const settings = (stateManager: SourceStateManager): NavigationButton => 
                                 getLanguages(stateManager),
                                 getSortOrders(stateManager),
                                 getExtraArgs(stateManager),
-                            ]).then(async values => {
-                                return [
+                            ]).then(async values => [
                                     createSelect({
                                         id: 'languages',
                                         label: 'Languages',
