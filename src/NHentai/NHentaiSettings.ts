@@ -71,8 +71,7 @@ export const settings = (stateManager: SourceStateManager): NavigationButton => 
                                         maskInput: false,
                                         value: values[2],
                                     })
-                                ]
-                            })
+                                ])
                         }
                     })
                 ])
