@@ -26,12 +26,12 @@ export const settings = (stateManager: SourceStateManager): NavigationButton => 
         value: '',
         label: 'Content Settings',
         form: createForm({
-            onSubmit: (values: any) => {
-                return Promise.all([
+            onSubmit: async (values: any) => {
+                await Promise.all([
                     stateManager.store('languages', values.languages),
                     stateManager.store('sort_order', values.sort_order),
                     stateManager.store('extra_args', values.extra_args),
-                ]).then()
+                ])
             },
             validate: () => {
                 return Promise.resolve(true)
