@@ -112,7 +112,7 @@ export class NHentai extends Source {
   async searchRequest(query: SearchRequest, metadata: any): Promise<PagedResults> {
     let page: number = metadata?.page ?? 1;
     let title: string = query.title ?? "";
-    if (/^\d+$/.test(title) && title.length <= 6) {
+    if (title.length <= 6 && /^\d+$/.test(title)) {
       const request = createRequestObject({
         url: `${API}/gallery/${title}`,
         method
