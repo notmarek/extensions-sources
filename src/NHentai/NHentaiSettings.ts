@@ -86,12 +86,12 @@ export const resetSettings = (stateManager: SourceStateManager): Button => {
         id: 'reset',
         label: 'Reset to Default',
         value: '',
-        onTap: () => {
-            return Promise.all([
+        onTap: async () => {
+            await Promise.all([
                 stateManager.store('languages', null),
                 stateManager.store('sort_order', null),
                 stateManager.store('extra_args', null),
-            ]).then()
+            ])
         }
     })
 }
