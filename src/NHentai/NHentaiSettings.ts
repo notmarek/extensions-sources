@@ -33,9 +33,7 @@ export const settings = (stateManager: SourceStateManager): NavigationButton => 
                     stateManager.store('extra_args', values.extra_args),
                 ])
             },
-            validate: () => {
-                return Promise.resolve(true)
-            },
+            validate: async () => true,
             sections: () => {
                 return Promise.resolve([
                     createSection({
