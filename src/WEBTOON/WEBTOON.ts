@@ -47,7 +47,41 @@ export class WEBTOON extends Source {
     });
 
     async getMangaDetails(mangaId: string): Promise<Manga> {
-        return {} as Manga;
+        let req = get(
+            API_DOMAIN +
+                "/lineWebtoon/webtoon/titleInfo.json?language=en&locale=en&platform=APP_IPHONE&serviceZone=GLOBAL&titleNo=" +
+                mangaId
+        );
+        const data = await this.requestManager.schedule(req, 1);
+        let parsedData =
+            typeof data.data == "string" ? JSON.parse(data.data) : data.data;
+        parsedData = parsedData.message.result.titleInfo;
+        return createManga({
+            id: mangaId,
+            titles: [parsedData.title],
+            image: "https://webtoon-phinf.pstatic.net" + parsedData.thumbnail,
+            rating: parsedData.starScoreAverage,
+            status: MangaStatus.ONGOING,
+            langFlag: "en",
+            artist: parsedData.pictureAuthorName,
+            author: parsedData.writingAuthorName,
+            desc: parsedData.synopsis,
+            follows: parsedData.favoriteCount,
+            tags: [
+                createTagSection({
+                    id: "Genre",
+                    label: "Genre",
+                    tags: [
+                        createTag({
+                            id: parsedData.representGenre,
+                            label: parsedData.representGenre.replaceAll("_", " "),
+                        }),
+                    ],
+                }),
+            ],
+            views: parsedData.readCount,
+            lastUpdate: new Date(parsedData.lastEpisodeRegisterYmdt),
+        });
     }
 
     async getSearchResults(
