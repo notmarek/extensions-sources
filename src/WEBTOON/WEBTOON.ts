@@ -91,11 +91,37 @@ export class WEBTOON extends Source {
     }
 
     async getChapters(mangaId: string): Promise<Chapter[]> {
-        return [];
+        let req = get(`${API_DOMAIN}/lineWebtoon/webtoon/episodeList.json?language=en&locale=en&pageSize=4000&platform=APP_IPHONE&serviceZone=GLOBAL&startIndex=0&titleNo=${mangaId}&v=3`)
+        const data = await this.requestManager.schedule(req, 1);
+        let d = typeof data.data == "string" ? JSON.parse(data.data) : data.data;
+        d = d.message.result.episodeList.episode;
+        return d.map((e: any) => {
+            return createChapter({
+                id: String(e.episodeSeq),
+                mangaId: mangaId,
+                chapNum: e.episodeNo,
+                langCode: LanguageCode.ENGLISH,
+                name: e.episodeTitle,
+                time: new Date(e.registerYmdt),
+            });
+        });
+
     }
 
-    async getChapterDetails(mangaId: string): Promise<ChapterDetails> {
-        return {} as ChapterDetails;
+    async getChapterDetails(mangaId: string, chapterId: string): Promise<ChapterDetails> {
+        let req = get(`${API_DOMAIN}/lineWebtoon/webtoon/episodeInfo.json?episodeNo=${chapterId}&language=en&locale=en&platform=APP_IPHONE&serviceZone=GLOBAL&titleNo=${mangaId}&v=4`)
+
+        const data = await this.requestManager.schedule(req, 1);
+        let d = typeof data.data == "string" ? JSON.parse(data.data) : data.data;
+        d = d.message.result.episodeInfo.imageInfo;
+        return createChapterDetails({
+            id: chapterId,
+            mangaId: mangaId,
+            pages: d.map((e: any) => {
+                return "https://webtoon-phinf.pstatic.net" + e.url;
+            }),
+            longStrip: true,
+        })
     }
 
     override async getHomePageSections(
