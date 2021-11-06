@@ -48,8 +48,7 @@ const updateOriginals = async (
         "originals",
         typeof data.data == "string" ? data.data : JSON.stringify(data.data)
     );
-    let pd =
-        typeof data.data == "string" ? JSON.parse(data.data) : data.data;
+    let pd = typeof data.data == "string" ? JSON.parse(data.data) : data.data;
 
     return pd.message.result.titleList ?? {};
 };
@@ -77,11 +76,21 @@ export class WEBTOON extends Source {
     });
 
     async getMangaDetails(mangaId: string): Promise<Manga> {
-        let req = get(
-            API_DOMAIN +
-                "/lineWebtoon/webtoon/titleInfo.json?language=en&locale=en&platform=APP_IPHONE&serviceZone=GLOBAL&titleNo=" +
-                mangaId
-        );
+        let req: any;
+        if (mangaId.startsWith("canvas_")) {
+            req = get(
+                API_DOMAIN +
+                    "/lineWebtoon/webtoon/challengeTitleInfo.json?language=en&locale=en&platform=APP_IPHONE&serviceZone=GLOBAL&titleNo=" +
+                    mangaId.replace("canvas_", "")
+            );
+        } else {
+            req = get(
+                API_DOMAIN +
+                    "/lineWebtoon/webtoon/titleInfo.json?language=en&locale=en&platform=APP_IPHONE&serviceZone=GLOBAL&titleNo=" +
+                    mangaId +
+                    "&v=1"
+            );
+        }
         const data = await this.requestManager.schedule(req, 1);
         let parsedData =
             typeof data.data == "string" ? JSON.parse(data.data) : data.data;
@@ -93,8 +102,8 @@ export class WEBTOON extends Source {
             rating: parsedData.starScoreAverage,
             status: MangaStatus.ONGOING,
             langFlag: "en",
-            artist: parsedData.pictureAuthorName,
-            author: parsedData.writingAuthorName,
+            artist: parsedData.pictureAuthorName ?? null,
+            author: parsedData.writingAuthorName ?? null,
             desc: parsedData.synopsis,
             follows: parsedData.favoriteCount,
             tags: [
@@ -162,7 +171,7 @@ export class WEBTOON extends Source {
 
             results = d.map((e: any) => {
                 return createMangaTile({
-                    id: String(e.titleNo),
+                    id: "canvas_" + String(e.titleNo),
                     title: createIconText({
                         text: e.title,
                     }),
@@ -180,16 +189,26 @@ export class WEBTOON extends Source {
     }
 
     async getChapters(mangaId: string): Promise<Chapter[]> {
-        let req = get(
-            `${API_DOMAIN}/lineWebtoon/webtoon/episodeList.json?language=en&locale=en&pageSize=4000&platform=APP_IPHONE&serviceZone=GLOBAL&startIndex=0&titleNo=${mangaId}&v=3`
-        );
+        let req: any;
+        if (mangaId.startsWith("canvas_")) {
+            req = get(
+                `${API_DOMAIN}/lineWebtoon/webtoon/challengeEpisodeList.json?language=en&locale=en&pageSize=4000&platform=APP_IPHONE&serviceZone=GLOBAL&startIndex=0&titleNo=${mangaId.replace(
+                    "canvas_",
+                    ""
+                )}&v=2`
+            );
+        } else {
+            req = get(
+                `${API_DOMAIN}/lineWebtoon/webtoon/episodeList.json?language=en&locale=en&pageSize=4000&platform=APP_IPHONE&serviceZone=GLOBAL&startIndex=0&titleNo=${mangaId}&v=3`
+            );
+        }
         const data = await this.requestManager.schedule(req, 1);
         let d =
             typeof data.data == "string" ? JSON.parse(data.data) : data.data;
         d = d.message.result.episodeList.episode;
         return d.map((e: any) => {
             return createChapter({
-                id: String(e.episodeSeq),
+                id: String(e.episodeNo),
                 mangaId: mangaId,
                 chapNum: e.episodeNo,
                 langCode: LanguageCode.ENGLISH,
@@ -203,9 +222,19 @@ export class WEBTOON extends Source {
         mangaId: string,
         chapterId: string
     ): Promise<ChapterDetails> {
-        let req = get(
-            `${API_DOMAIN}/lineWebtoon/webtoon/episodeInfo.json?episodeNo=${chapterId}&language=en&locale=en&platform=APP_IPHONE&serviceZone=GLOBAL&titleNo=${mangaId}&v=4`
-        );
+        let req: any;
+        if (mangaId.startsWith("canvas_")) {
+            req = get(
+                `${API_DOMAIN}/lineWebtoon/webtoon/challengeEpisodeInfo.json?episodeNo=${chapterId}&language=en&locale=en&platform=APP_IPHONE&serviceZone=GLOBAL&titleNo=${mangaId.replace(
+                    "canvas_",
+                    ""
+                )}&v=2`
+            );
+        } else {
+            req = get(
+                `${API_DOMAIN}/lineWebtoon/webtoon/episodeInfo.json?episodeNo=${chapterId}&language=en&locale=en&platform=APP_IPHONE&serviceZone=GLOBAL&titleNo=${mangaId}&v=4`
+            );
+        }
 
         const data = await this.requestManager.schedule(req, 1);
         let d =
