@@ -7,7 +7,7 @@ const digestMessage = (msg: string): string => {
 };
 
 const getMesage = (url: string, time: string): string => {
-    return url + time;
+    return url.substring(0, 255) + time;
 };
 
 const getFullUrl = (url: string): string => {

@@ -18,6 +18,8 @@ import {
     Section,
     HomeSectionType,
     MangaUpdates,
+    SourceStateManager,
+    RequestManager,
 } from "paperback-extensions-common";
 import { HomePage } from "./WEBTOONAPI";
 import { get } from "./WEBTOONUtil";
@@ -25,6 +27,32 @@ import { ImageInterceptor } from "./interceptors/ImageInterceptor";
 export const API_DOMAIN = "https://global.apis.naver.com";
 export const API_HMAC_KEY =
     "gUtPzJFZch4ZyAGviiyH94P99lQ3pFdRTwpJWDlSGFfwgpr6ses5ALOxWHOIT7R1";
+
+const originals = async (stateManager: SourceStateManager): Promise<any> => {
+    let data = ((await stateManager.retrieve("originals")) as string) ?? "{}";
+    let pp = typeof data == "string" ? JSON.parse(data) : data;
+
+    return pp.hasOwnProperty("message") ? pp.message.result.titleList : {};
+};
+
+const updateOriginals = async (
+    stateManager: SourceStateManager,
+    requestManager: RequestManager
+): Promise<any> => {
+    let req = get(
+        `${API_DOMAIN}/lineWebtoon/webtoon/titleList.json?language=en&locale=en&platform=APP_IPHONE&serviceZone=GLOBAL&v=1`
+    );
+    const data = await requestManager.schedule(req, 1);
+
+    await stateManager.store(
+        "originals",
+        typeof data.data == "string" ? data.data : JSON.stringify(data.data)
+    );
+    let pd =
+        typeof data.data == "string" ? JSON.parse(data.data) : data.data;
+
+    return pd.message.result.titleList ?? {};
+};
 
 export const WEBTOONInfo: SourceInfo = {
     author: "NotMarek",
@@ -40,6 +68,8 @@ export const WEBTOONInfo: SourceInfo = {
 };
 
 export class WEBTOON extends Source {
+    stateManager = createSourceStateManager({});
+
     readonly requestManager = createRequestManager({
         requestsPerSecond: 3,
         requestTimeout: 10000,
@@ -74,7 +104,10 @@ export class WEBTOON extends Source {
                     tags: [
                         createTag({
                             id: parsedData.representGenre,
-                            label: parsedData.representGenre.replaceAll("_", " "),
+                            label: parsedData.representGenre.replaceAll(
+                                "_",
+                                " "
+                            ),
                         }),
                     ],
                 }),
@@ -85,15 +118,74 @@ export class WEBTOON extends Source {
     }
 
     async getSearchResults(
-        searchRequest: SearchRequest
+        searchRequest: SearchRequest,
+        metadata: any
     ): Promise<PagedResults> {
-        return createPagedResults({} as PagedResults);
+        let page: number = metadata?.page ?? -1;
+        let q: string = searchRequest.title ?? "";
+        let results: MangaTile[] = [];
+        if (page < 0) {
+            let ogs: any = await originals(this.stateManager);
+            if (
+                !ogs.hasOwnProperty("count") ||
+                ogs.now + 60 * 60 * 24 * 1000 < Date.now()
+            ) {
+                ogs = await updateOriginals(
+                    this.stateManager,
+                    this.requestManager
+                );
+            }
+            results = ogs.titles
+                .filter((e: any) => e.title.includes(q))
+                .map((e: any) => {
+                    return createMangaTile({
+                        id: String(e.titleNo),
+                        title: createIconText({
+                            text: e.title,
+                        }),
+                        image:
+                            "https://webtoon-phinf.pstatic.net" + e.thumbnail,
+                    });
+                });
+        } else {
+            let req = get(
+                `${API_DOMAIN}/lineWebtoon/webtoon/challengeSearch.json?language=en&locale=en&pageSize=20&platform=APP_IPHONE&query=${encodeURIComponent(
+                    q
+                )}&serviceZone=GLOBAL&startIndex=${page * 20}`
+            );
+            const data = await this.requestManager.schedule(req, 1);
+            let d =
+                typeof data.data == "string"
+                    ? JSON.parse(data.data)
+                    : data.data;
+            d = d.message.result.challengeSearch.titleList;
+
+            results = d.map((e: any) => {
+                return createMangaTile({
+                    id: String(e.titleNo),
+                    title: createIconText({
+                        text: e.title,
+                    }),
+                    image: "https://webtoon-phinf.pstatic.net" + e.thumbnail,
+                });
+            });
+        }
+
+        return createPagedResults({
+            results: results,
+            metadata: {
+                page: page + 1,
+            },
+        });
     }
 
     async getChapters(mangaId: string): Promise<Chapter[]> {
-        let req = get(`${API_DOMAIN}/lineWebtoon/webtoon/episodeList.json?language=en&locale=en&pageSize=4000&platform=APP_IPHONE&serviceZone=GLOBAL&startIndex=0&titleNo=${mangaId}&v=3`)
+        let req = get(
+            `${API_DOMAIN}/lineWebtoon/webtoon/episodeList.json?language=en&locale=en&pageSize=4000&platform=APP_IPHONE&serviceZone=GLOBAL&startIndex=0&titleNo=${mangaId}&v=3`
+        );
         const data = await this.requestManager.schedule(req, 1);
-        let d = typeof data.data == "string" ? JSON.parse(data.data) : data.data;
+        let d =
+            typeof data.data == "string" ? JSON.parse(data.data) : data.data;
         d = d.message.result.episodeList.episode;
         return d.map((e: any) => {
             return createChapter({
@@ -105,14 +197,19 @@ export class WEBTOON extends Source {
                 time: new Date(e.registerYmdt),
             });
         });
-
     }
 
-    async getChapterDetails(mangaId: string, chapterId: string): Promise<ChapterDetails> {
-        let req = get(`${API_DOMAIN}/lineWebtoon/webtoon/episodeInfo.json?episodeNo=${chapterId}&language=en&locale=en&platform=APP_IPHONE&serviceZone=GLOBAL&titleNo=${mangaId}&v=4`)
+    async getChapterDetails(
+        mangaId: string,
+        chapterId: string
+    ): Promise<ChapterDetails> {
+        let req = get(
+            `${API_DOMAIN}/lineWebtoon/webtoon/episodeInfo.json?episodeNo=${chapterId}&language=en&locale=en&platform=APP_IPHONE&serviceZone=GLOBAL&titleNo=${mangaId}&v=4`
+        );
 
         const data = await this.requestManager.schedule(req, 1);
-        let d = typeof data.data == "string" ? JSON.parse(data.data) : data.data;
+        let d =
+            typeof data.data == "string" ? JSON.parse(data.data) : data.data;
         d = d.message.result.episodeInfo.imageInfo;
         return createChapterDetails({
             id: chapterId,
@@ -121,7 +218,7 @@ export class WEBTOON extends Source {
                 return "https://webtoon-phinf.pstatic.net" + e.url;
             }),
             longStrip: true,
-        })
+        });
     }
 
     override async getHomePageSections(
