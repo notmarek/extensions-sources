@@ -8,26 +8,25 @@ import {
     SearchRequest,
     SourceInfo,
     LanguageCode,
-    TagType,
     MangaStatus,
     MangaTile,
-    Tag,
-    RequestHeaders,
     ContentRating,
-    TagSection,
-    Section,
-    HomeSectionType,
-    MangaUpdates,
     SourceStateManager,
     RequestManager,
 } from "paperback-extensions-common";
 import { HomePage } from "./WEBTOONAPI";
-import { get } from "./WEBTOONUtil";
+import { get, URLBuilder } from "./WEBTOONUtil";
 import { ImageInterceptor } from "./interceptors/ImageInterceptor";
 export const API_DOMAIN = "https://global.apis.naver.com";
 export const API_HMAC_KEY =
     "gUtPzJFZch4ZyAGviiyH94P99lQ3pFdRTwpJWDlSGFfwgpr6ses5ALOxWHOIT7R1";
-
+export const STATIC_BUILDER = new URLBuilder(
+    "https://webtoon-phinf.pstatic.net"
+);
+export const API_BUILDER = new URLBuilder(`${API_DOMAIN}/lineWebtoon/webtoon/`)
+    .addQueryParameter("language", "en")
+    .addQueryParameter("platform", "APP_IPHONE")
+    .addQueryParameter("serviceZone", "GLOBAL");
 const originals = async (stateManager: SourceStateManager): Promise<any> => {
     let data = ((await stateManager.retrieve("originals")) as string) ?? "{}";
     let pp = typeof data == "string" ? JSON.parse(data) : data;
@@ -40,7 +39,9 @@ const updateOriginals = async (
     requestManager: RequestManager
 ): Promise<any> => {
     let req = get(
-        `${API_DOMAIN}/lineWebtoon/webtoon/titleList.json?language=en&locale=en&platform=APP_IPHONE&serviceZone=GLOBAL&v=1`
+        API_BUILDER.addPathComponent("titleList.json")
+            .addQueryParameter("v", "1")
+            .buildUrl()
     );
     const data = await requestManager.schedule(req, 1);
 
@@ -79,16 +80,19 @@ export class WEBTOON extends Source {
         let req: any;
         if (mangaId.startsWith("canvas_")) {
             req = get(
-                API_DOMAIN +
-                    "/lineWebtoon/webtoon/challengeTitleInfo.json?language=en&locale=en&platform=APP_IPHONE&serviceZone=GLOBAL&titleNo=" +
-                    mangaId.replace("canvas_", "")
+                API_BUILDER.addPathComponent("challengeTitleInfo.json")
+                    .addQueryParameter(
+                        "titleNo",
+                        mangaId.replace("canvas_", "")
+                    )
+                    .buildUrl()
             );
         } else {
             req = get(
-                API_DOMAIN +
-                    "/lineWebtoon/webtoon/titleInfo.json?language=en&locale=en&platform=APP_IPHONE&serviceZone=GLOBAL&titleNo=" +
-                    mangaId +
-                    "&v=1"
+                API_BUILDER.addPathComponent("titleInfo.json")
+                    .addQueryParameter("titleNo", mangaId)
+                    .addQueryParameter("v", "1")
+                    .buildUrl()
             );
         }
         const data = await this.requestManager.schedule(req, 1);
@@ -98,7 +102,9 @@ export class WEBTOON extends Source {
         return createManga({
             id: mangaId,
             titles: [parsedData.title],
-            image: "https://webtoon-phinf.pstatic.net" + parsedData.thumbnail,
+            image: STATIC_BUILDER.addPathComponent(
+                parsedData.thumbnail
+            ).buildUrl(),
             rating: parsedData.starScoreAverage,
             status: MangaStatus.ONGOING,
             langFlag: "en",
@@ -152,15 +158,18 @@ export class WEBTOON extends Source {
                         title: createIconText({
                             text: e.title,
                         }),
-                        image:
-                            "https://webtoon-phinf.pstatic.net" + e.thumbnail,
+                        image: STATIC_BUILDER.addPathComponent(
+                            e.thumbnail
+                        ).buildUrl(),
                     });
                 });
         } else {
             let req = get(
-                `${API_DOMAIN}/lineWebtoon/webtoon/challengeSearch.json?language=en&locale=en&pageSize=20&platform=APP_IPHONE&query=${encodeURIComponent(
-                    q
-                )}&serviceZone=GLOBAL&startIndex=${page * 20}`
+                API_BUILDER.addPathComponent("challengeSearch.json")
+                    .addQueryParameter("pageSize", "20")
+                    .addQueryParameter("query", encodeURIComponent(q))
+                    .addQueryParameter("startIndex", page * 20)
+                    .buildUrl()
             );
             const data = await this.requestManager.schedule(req, 1);
             let d =
@@ -175,7 +184,9 @@ export class WEBTOON extends Source {
                     title: createIconText({
                         text: e.title,
                     }),
-                    image: "https://webtoon-phinf.pstatic.net" + e.thumbnail,
+                    image: STATIC_BUILDER.addPathComponent(
+                        e.thumbnail
+                    ).buildUrl(),
                 });
             });
         }
@@ -192,14 +203,24 @@ export class WEBTOON extends Source {
         let req: any;
         if (mangaId.startsWith("canvas_")) {
             req = get(
-                `${API_DOMAIN}/lineWebtoon/webtoon/challengeEpisodeList.json?language=en&locale=en&pageSize=4000&platform=APP_IPHONE&serviceZone=GLOBAL&startIndex=0&titleNo=${mangaId.replace(
-                    "canvas_",
-                    ""
-                )}&v=2`
+                API_BUILDER.addPathComponent("challengeEpisodeList.json")
+                    .addQueryParameter("pageSize", 4000)
+                    .addQueryParameter("startIndex", 0)
+                    .addQueryParameter(
+                        "titleNo",
+                        mangaId.replace("canvas_", "")
+                    )
+                    .addQueryParameter("v", 2)
+                    .buildUrl()
             );
         } else {
             req = get(
-                `${API_DOMAIN}/lineWebtoon/webtoon/episodeList.json?language=en&locale=en&pageSize=4000&platform=APP_IPHONE&serviceZone=GLOBAL&startIndex=0&titleNo=${mangaId}&v=3`
+                API_BUILDER.addPathComponent("episodeList.json")
+                    .addQueryParameter("pageSize", 4000)
+                    .addQueryParameter("startIndex", 0)
+                    .addQueryParameter("titleNo", mangaId)
+                    .addQueryParameter("v", 3)
+                    .buildUrl()
             );
         }
         const data = await this.requestManager.schedule(req, 1);
@@ -225,14 +246,22 @@ export class WEBTOON extends Source {
         let req: any;
         if (mangaId.startsWith("canvas_")) {
             req = get(
-                `${API_DOMAIN}/lineWebtoon/webtoon/challengeEpisodeInfo.json?episodeNo=${chapterId}&language=en&locale=en&platform=APP_IPHONE&serviceZone=GLOBAL&titleNo=${mangaId.replace(
-                    "canvas_",
-                    ""
-                )}&v=2`
+                API_BUILDER.addPathComponent("challengeEpisodeInfo.json")
+                    .addQueryParameter("episodeNo", chapterId)
+                    .addQueryParameter(
+                        "titleNo",
+                        mangaId.replace("canvas_", "")
+                    )
+                    .addQueryParameter("v", 2)
+                    .buildUrl()
             );
         } else {
             req = get(
-                `${API_DOMAIN}/lineWebtoon/webtoon/episodeInfo.json?episodeNo=${chapterId}&language=en&locale=en&platform=APP_IPHONE&serviceZone=GLOBAL&titleNo=${mangaId}&v=4`
+                API_BUILDER.addPathComponent("episodeInfo.json")
+                    .addQueryParameter("episodeNo", chapterId)
+                    .addQueryParameter("titleNo", mangaId)
+                    .addQueryParameter("v", 4)
+                    .buildUrl()
             );
         }
 
@@ -244,7 +273,7 @@ export class WEBTOON extends Source {
             id: chapterId,
             mangaId: mangaId,
             pages: d.map((e: any) => {
-                return "https://webtoon-phinf.pstatic.net" + e.url;
+                return STATIC_BUILDER.addPathComponent(e.url).buildUrl();
             }),
             longStrip: true,
         });
@@ -254,9 +283,14 @@ export class WEBTOON extends Source {
         sectionCallback: (section: HomeSection) => void
     ): Promise<void> {
         const req = get(
-            `${API_DOMAIN}/lineWebtoon/webtoon/home_v2.json?language=en&locale=en&platform=APP_IPHONE&serviceZone=GLOBAL&weekday=${new Date()
-                .toLocaleString("default", { weekday: "long" })
-                .toUpperCase()}`
+            API_BUILDER.addPathComponent("home_v2.json")
+                .addQueryParameter(
+                    "weekday",
+                    new Date()
+                        .toLocaleString("default", { weekday: "long" })
+                        .toUpperCase()
+                )
+                .buildUrl()
         );
         const data = await this.requestManager.schedule(req, 1);
         HomePage(

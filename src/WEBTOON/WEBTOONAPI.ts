@@ -1,8 +1,6 @@
-import {
-    HomeSection,
-    HomeSectionType,
-    MangaTile,
-} from "paperback-extensions-common";
+import { HomeSection, HomeSectionType } from "paperback-extensions-common";
+
+import { STATIC_BUILDER } from "./WEBTOON";
 
 export const HomePage = (
     sectionCallback: (section: HomeSection) => void,
@@ -20,7 +18,7 @@ export const HomePage = (
             title: createIconText({
                 text: x.title,
             }),
-            image: "https://webtoon-phinf.pstatic.net" + x.thumbnail,
+            image: STATIC_BUILDER.addPathComponent(x.thumbnail).buildUrl(),
         });
     });
     sectionCallback(today);
@@ -38,7 +36,7 @@ export const HomePage = (
                 title: createIconText({
                     text: x.title,
                 }),
-                image: "https://webtoon-phinf.pstatic.net" + x.thumbnail,
+                image: STATIC_BUILDER.addPathComponent(x.thumbnail).buildUrl(),
             });
         });
         sectionCallback(section);
